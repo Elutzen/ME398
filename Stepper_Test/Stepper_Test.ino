@@ -136,7 +136,7 @@ void serialRead() {
         break;
         
        case 'f' :
-        Serial.println("Number of steps (int)\n");
+        Serial.println("Number of steps (int)  200 steps = 1 rev\n");
         while(!Serial.available()){}
         numSteps = Serial.parseInt();
         action = 'f';

@@ -1,5 +1,5 @@
 
-//included libraries can be found at https://github.com/laurb9/StepperDriver
+
 #include <A4988.h>
 #include <BasicStepperDriver.h>
 #include <DRV8825.h>
@@ -87,6 +87,7 @@ void vibrationPlate() {
 }
 
 void takeSteps(int s) {
+  stepper.setRPM(rpm);
   stepper.move(s);
   action = 'a';
   Serial.println("Done");

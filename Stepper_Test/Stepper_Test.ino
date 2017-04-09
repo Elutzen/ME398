@@ -51,12 +51,10 @@ void loop() {
 }
 
 void auger() {
-  
-  unsigned rpm = 350;
   stepper.setRPM(rpm);
   stepper.move(300);
-  stepper.setRPM(100);
-  stepper.move(20);
+  /*stepper.setRPM(100);
+  stepper.move(20);*/
 }
 
 void vibrationPlateSetup() {
@@ -158,6 +156,5 @@ void printMenu() {
   Serial.println("f) Take Steps\n");
   Serial.println("g) Return Rpm\n");
 }
-
 
 

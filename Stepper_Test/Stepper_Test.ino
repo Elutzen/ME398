@@ -2,13 +2,19 @@
 #include <BasicStepperDriver.h>
 #include <DRV8825.h>
 #include <DRV8834.h>
-
+#include <avr/wdt.h>
 #include <Arduino.h>
 #include <SoftwareSerial.h>
+
+//#define SHOWMENU
 
 // using a 200-step motor (most common)
 // pins used are DIR, STEP, MS1, MS2, MS3 in that order
 DRV8825 stepper(200, 8, 9);
+#define ENBL 7
+#define enable() digitalWrite(ENBL,LOW)
+#define disable() digitalWrite(ENBL,HIGH);
+
 char action = 'a';
 long rpm = 10;
 int tempRpm=0;
@@ -21,6 +27,8 @@ void printMenu();
 void takeSteps(int);
 
 void setup() {
+  pinMode(ENBL,OUTPUT);
+  disable();
   Serial.begin(9600);
   // Set target motor RPM to 10RPM
   stepper.setRPM(10);
@@ -32,29 +40,38 @@ void setup() {
 void loop() {
   serialRead();
   switch (action) {
+    case 'a':
+      disable();
+      break;
     case 'b' :
+      enable();
       auger();
       break;
     case 'c' :
+      enable();
       vibrationAuger();
       break;
     case 'd' :
+      enable();
       vibrationPlateSetup();
       break;
     case 'z' :
+      enable();
       vibrationPlate();
       break;
-     case 'f' :
+    case 'f' :
+      enable();
       takeSteps(numSteps);
+      break;
+    case 'h':
+      enable();
       break;
   }
 }
 
 void auger() {
   stepper.setRPM(rpm);
-  stepper.move(300);
-  /*stepper.setRPM(100);
-  stepper.move(20);*/
+  stepper.move(50);
 }
 
 void vibrationPlateSetup() {
@@ -85,7 +102,6 @@ void takeSteps(int s) {
   stepper.setRPM(rpm);
   stepper.move(s);
   action = 'a';
-  Serial.println("Done");
 }
 
 void vibrationAuger() {
@@ -99,7 +115,7 @@ void vibrationAuger() {
 
 void serialRead() {
   if (Serial.available()) {
-    Serial.flush();
+    //Serial.flush();
     char c = Serial.read();
     switch (c) {
       case 'a' :
@@ -118,7 +134,6 @@ void serialRead() {
         Serial.println("Current Action: Plate\n" );
         action = 'd';
         break;
-       
        case 'e' :
         Serial.println("Give Rpm (int)\n" );
         while(!Serial.available()){}
@@ -130,7 +145,6 @@ void serialRead() {
            Serial.println("Invalid int\n" );
         }
         break;
-        
        case 'f' :
         Serial.println("Number of steps (int)  200 steps = 1 rev\n");
         while(!Serial.available()){}
@@ -140,14 +154,20 @@ void serialRead() {
        case 'g' : 
         Serial.println(rpm);
        break;
+       case 'h':
+         Serial.println("Current Action: Braked\n" );
+         action = 'h';
+         break;
       default :
         Serial.println("Invalid entry\n" );
     }
     printMenu();
+    while(Serial.available()){Serial.read();}
   }
 }
 
 void printMenu() {
+#ifdef SHOWMENU
   Serial.println("a) Stop\n");
   Serial.println("b) Auger-no rpm control\n");
   Serial.println("c) Vibration Axel-no rpm control\n");
@@ -155,6 +175,7 @@ void printMenu() {
   Serial.println("e) Set Rpm\n");
   Serial.println("f) Take Steps\n");
   Serial.println("g) Return Rpm\n");
+#endif
 }
 
 

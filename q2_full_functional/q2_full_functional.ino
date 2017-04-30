@@ -1,10 +1,24 @@
+#include <avr/io.h>
+
 int analogPin = 0;
 
+
 void setup() {
-  pinMode(5, OUTPUT);//voice coil pwm
-  pinMode(4, OUTPUT);//voice coil enable
+  pinMode(4, OUTPUT);//voice coil direction
   Serial.begin(9600);
   digitalWrite(4,HIGH);
+  
+  //PWM Set Up
+  DDRD |= (1 << DDD6);
+    // PD6 is now an output
+  OCR0A = 128;
+    // set PWM for 50% duty cycle
+  TCCR0A |= (1 << COM0A1);
+    // set none-inverting mode
+  TCCR0A |= (1 << WGM01) | (1 << WGM00);
+    // set fast PWM Mode
+  TCCR0B |= (1 << CS01);
+    // set prescaler to 8 and starts PWM
 }
 
 void loop() {
@@ -13,11 +27,13 @@ void loop() {
 }
 
 void voicePWM() {
-  //drives voice coil with pdm signal
-    digitalWrite(5, HIGH);
-    delayMicroseconds(1); // Approximately 50% duty cycle @ 5KHz
-    digitalWrite(5, LOW);
-    delayMicroseconds(10 - 5);
+//    drives voice coil with pdm signal
+//    digitalWrite(5, HIGH);
+//    delayMicroseconds(1); // Approximately 50% duty cycle @ 5KHz
+//    digitalWrite(5, LOW);
+//    delayMicroseconds(10 - 5);
+
+  
 }
 
 void getCurrent() {

@@ -6,7 +6,7 @@
 #include <Arduino.h>
 #include <SoftwareSerial.h>
 
-//#define SHOWMENU
+#define SHOWMENU
 
 // using a 200-step motor (most common)
 // pins used are DIR, STEP, MS1, MS2, MS3 in that order
@@ -175,6 +175,7 @@ void printMenu() {
   Serial.println("e) Set Rpm\n");
   Serial.println("f) Take Steps\n");
   Serial.println("g) Return Rpm\n");
+  Serial.println("h) Brake\n");
 #endif
 }
 

@@ -8,10 +8,10 @@ void setup() {
   Serial.begin(9600);
   digitalWrite(4,HIGH);
   
-  //PWM Set Up
+  //PWM Set Up (8kHz)
   DDRD |= (1 << DDD6);
     // PD6 is now an output
-  OCR0A = 128;
+  OCR0A = 200;
     // set PWM for 50% duty cycle
   TCCR0A |= (1 << COM0A1);
     // set none-inverting mode

@@ -118,20 +118,19 @@ void tare() {
   //corrects position and sets the tare current
 }
 
-float measure() {
+void measure() {
   //corrects position and measures current to find mass
   correctPosition();
-  float curInt = getCurrent();
-  float curV = ((float)curInt) / 1024;
-  float curr = curV / 1.604;
-  return curr;
-  Serial.println(curr);
+  
 }
 
-float calcMass(float I) {
+float calcMass() {
   //takes in a current and returns a mass
-  float massMeasured;
-  return massMeasured;
+  
+  float curInt = getCurrent();
+  float curV = (5*(float)curInt) / 1024;
+  float curr = curV / 1.604;
+  return curr;
 }
 
 void auger() {
@@ -181,9 +180,11 @@ void serialRead() {
         Serial.print("correcting position ");
         correctPosition();
         break;
-        case 'f' :
+      case 'f' :
         Serial.print("measure mass (in current/ not tared) ");
         correctPosition();
+        String temp = String(calcMass());
+        Serial.println(temp);
         break;
     }
     menu();

@@ -27,19 +27,36 @@ void setup(void) {
   Serial.begin(9600);
   tft.begin(HX8357D);
   tft.fillScreen(HX8357_BLACK);
+  drawDispenseButton(HX8357_GREEN);
+}
+
+void drawDispenseButton(uint16_t color) 
+{
+  tft.fillRect(50,80,tft.width()-100,60,color);
+  tft.setCursor(tft.width()/2 - 80,105);
+  tft.setTextColor(HX8357_BLACK);
+  tft.setTextSize(3);
+  tft.print(F("Dispense"));
 }
 
 void loop(void) {
   // a point object holds x y and z coordinates
   TSPoint p = ts.getPoint();
+  int   tx = map(p.x,147,925,0,320);
+  int   ty = map(p.y,83,925,0,480);
+  float tz = map(p.z,0,ts.pressureThreshhold,0,1);
   
   // we have some minimum pressure we consider 'valid'
   // pressure of 0 means no pressing!
-  if (p.z > ts.pressureThreshhold) {
+  if (tz > 1) {
      Serial.print("X = "); Serial.print(p.x);
      Serial.print("\tY = "); Serial.print(p.y);
      Serial.print("\tPressure = "); Serial.println(p.z);
-     tft.fillCircle(map(p.x,167,900,0,320),map(p.y,100,900,0,480),5,HX8357_RED);
+     tft.fillCircle(tx,ty,150.0/tz,HX8357_RED);
+
+     if (tx > 50 && tx < 320-50 && ty > 80 && ty < 80+60) {
+      drawDispenseButton(HX8357_RED);
+     }
   }
 
   delay(20);

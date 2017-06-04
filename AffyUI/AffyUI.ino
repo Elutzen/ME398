@@ -28,6 +28,7 @@
 #define _BRIGHT 7
 Adafruit_HX8357 tft = Adafruit_HX8357(_CS,_DC);
 short TFTbrightness = 127;
+#define BRIGHTNESS_PWM_FREQ 7324
 
 // For better pressure precision, we need to know the resistance
 // between X+ and X- Use any multimeter to read it
@@ -74,9 +75,9 @@ struct Button {
 };
 
 // Create buttons here
-Button BtnDispense(BtnType::SINGLE, 50, 50, 150, 50, "Dispense",HX8357_GREEN);
-Button BtnCancel  (BtnType::TOGGLE, 50, 110, 150, 50, "Cancel", HX8357_RED);
-Button BtnRapid   (BtnType::SINGLE, 50, 170, 150, 50, "Rapid", HX8357_YELLOW);
+Button BtnDispense(BtnType::SINGLE, 80, 50, 150, 50, "Dispense",HX8357_GREEN);
+Button BtnCancel  (BtnType::TOGGLE, 80, 110, 150, 50, "Cancel", HX8357_RED);
+Button BtnRapid   (BtnType::SINGLE, 80, 170, 150, 50, "Rapid", HX8357_YELLOW);
 
 /////////// HELPERS //////////////
 void handleTouch() {
@@ -98,7 +99,7 @@ void updateButtons() {
 void drawAllButtons(bool force = false) {
   /* DISPENSE */
   if (BtnDispense.millisLastChanged > millis() - 300 || force) {
-    BtnDispense.color = BtnDispense.justReleased() ? HX8357_BLUE: HX8357_GREEN;
+    BtnDispense.color = BtnDispense.justPressed() ? HX8357_BLUE: HX8357_GREEN;
     BtnDispense.draw();
   }
 
@@ -117,11 +118,11 @@ void drawAllButtons(bool force = false) {
 
 void drawReadout() {
   tft.setFont(&FreeSansBold24pt7b);
-  tft.setCursor(50,350);
+  tft.setCursor(20,350);
   tft.setTextColor(HX8357_WHITE);
   tft.setTextSize(2);
-  tft.fillRect(50,250,200,106,HX8357_BLACK);
-  tft.print(p.x/100.0);
+  tft.fillRect(0,275,320,85,HX8357_BLACK);
+  tft.print(p.x/100.0,4);
   tft.drawCircle(p.x,p.y,3,HX8357_RED);
 }
 
@@ -129,6 +130,7 @@ void drawReadout() {
 void setup(void) {
   Serial.begin(115200);
   pinMode(_BRIGHT,OUTPUT); // PWM Brightness pin
+  analogWriteFrequency(_BRIGHT,BRIGHTNESS_PWM_FREQ);
   tft.begin(HX8357D);
   tft.fillScreen(HX8357_BLACK);
   Serial.print(BtnDispense.justPressed());
@@ -155,7 +157,7 @@ void loop(void) {
   delay(10);
 }
 
-// Button update code
+///////// Button functions ////////////
 void Button::update() {
   // Sync current state
   prevState = state;

@@ -8,47 +8,40 @@
 #include <SPI.h>
 
 //Overall Control
-char action = 'a';
+//#define SUPRESS_OUTPUT
 
+enum ACTION {IDLE, AUGERSLOW, AUGERFAST, MEASURE, DISPENSE} action = IDLE;
 
 //Spi Control
 #define HWSERIAL Serial1
 
-
 //Position Control Variables
 #define anPos A20 // analog position
-#define posUpper 255
-#define posLower 252
+#define posUpper 530
+#define posLower 504
 #define sumNumber 10
 #define DAC A22
 #define dacStep 1
 #define sec 500
 int dacVal = 50000000;
 
-
-
 //auger
-#define AUG_FASTRPM 300
-#define AUG_SLOWRPM 10
+// using a 200-step motor (most common)
+// pins used are DIR, STEP, MS1, MS2, MS3 in that order
+DRV8825 stepper(200, 30, 29, 28);
+#define AUGERFAST_RPM 300
+#define AUGERSLOW_RPM 10
 long rpm = 60;
 int tempRpm = 0;
 int numSteps = 0;
-// using a 200-step motor (most common)
-// pins used are DIR, STEP, MS1, MS2, MS3 in that order
-DRV8825 stepper(200, 30, 29);
-#define ENBL 28
-#define enable() digitalWrite(ENBL,LOW)
-#define disable() digitalWrite(ENBL,HIGH);
 
 //Voice coil setup
-#define PWMstep 1
+#define PWMstep 5
 int PWMval = 360;
 #define PWMpin 4
 
 //Vibration Setup
 #define vibeHz 50
-
-
 
 void setup() {
   // serial set up
@@ -56,35 +49,45 @@ void setup() {
 HWSERIAL.begin(9600);
 
   //Auger setup
-  pinMode(ENBL, OUTPUT);
-  disable();
+  stepper.disable();
   stepper.setRPM(rpm);
   stepper.setMicrostep(1);
 
   //Dac set up
   analogWriteResolution(10);
   analogWriteFrequency(4, 46875);
-  Serial.println("START");
 
+  //Wait for connection
+  while (!Serial) {}
+  Serial.println("START");
+  menu();
 }
 
 void loop() {
-  float val = getPosition();
-  //Serial.println(val);
-  //readCurrent();
-  //correctPosition();
-  //analogWrite(PWMpin,400);
-
+  float val;
   readCommand();
   switch (action) {
-    case 'a' :
-      disable();
-      action = 'a';
+    case IDLE :
       break;
-    case 'k':
+    case AUGERSLOW:
+      stepper.enable();
       augerSlow();
       break;
-    case 'p':
+    case AUGERFAST:
+      stepper.enable();
+      augerFast();
+      break;
+    case MEASURE:
+      val = getPosition();
+#ifndef SUPRESS_OUTPUT
+        Serial.println(val);
+#endif
+      //readCurrent();
+      correctPosition();
+      //analogWrite(PWMpin,400); 
+      if (action == MEASURE) {action = DISPENSE;}
+      break;
+    case DISPENSE:
       plateVibe();
       break;
   }
@@ -95,25 +98,34 @@ void loop() {
 /*Position control
    Main Function correctPostion() returns the voice coil to the measuring position
 
-
-
 */
 void correctPosition() {
   // moves voice coil into to measuring position
   float pos = getPosition();
-  while (pos < posLower || pos > posUpper) {
+  int count = 0;
+  while ((pos < posLower || pos > posUpper) && count < 30) {
     if (pos < posLower) {
       voltagePositionControl(-1);
+#ifndef SUPRESS_OUTPUT
       Serial.println("High");
+#endif
     }
     if (pos > posUpper) {
       voltagePositionControl(1);
+#ifndef SUPRESS_OUTPUT
       Serial.println("Low");
       Serial.println(getPosition());
+#endif
     }
     pos = getPosition();
     delay(sec);
+    count++;
+
+    // allow user to break out of loop
+    if (readCommand()){break;}
   }
+  // Turn it off
+  analogWrite(PWMpin,0);
 }
 
 void voltagePositionControl(int dir) {
@@ -121,14 +133,18 @@ void voltagePositionControl(int dir) {
     case 1:
       PWMval += PWMstep;
       analogWrite(PWMpin, PWMval);
+#ifndef SUPRESS_OUTPUT
       Serial.println("increase");
       Serial.println(PWMval);
+#endif
       break;
     case -1:
       PWMval -= PWMstep;
       analogWrite(PWMpin, PWMval);
+#ifndef SUPPRESS_OUTPUT
       Serial.println("decrease");
       Serial.println(PWMval);
+#endif
       break;
   }
 }
@@ -165,12 +181,14 @@ void takeSteps(int s) {
 }
 
 void augerFast() {
-  stepper.setRPM(AUG_FASTRPM);
-  stepper.move(10);
+  stepper.setRPM(AUGERFAST_RPM);
+  stepper.move(195);
+  //stepper.setRPM(AUGERSLOW_RPM);
+  //stepper.move(5);
 }
 
 void augerSlow() {
-  stepper.setRPM(AUG_SLOWRPM);
+  stepper.setRPM(AUGERSLOW_RPM);
   stepper.move(10);
 }
 
@@ -189,18 +207,10 @@ void augerSlow() {
 */
 
 void plateVibe() {
-  float place  = 0.0;
-  float twopi = 3.14159 * 2;
-  while (1) {
-    float val = sin(place) * 2000.0 + 2050.0;
-    Serial.println(val);
-    analogWrite(DAC, (int)val);
-    place = place + 0.02;
-    if (place >= twopi) {
-      place = 0;
-    }
-    delayMicroseconds(vibeHz);
-  }
+    delay(20);
+    analogWrite(PWMpin,100);
+    delay(20);
+    analogWrite(PWMpin,700);
 }
 
 /* End of Vibration
@@ -215,7 +225,7 @@ void plateVibe() {
 
 
 */
-float readCurrent() {
+/*float readCurrent() {
  HWSERIAL.flush();
  int incomingByte;
   if (HWSERIAL.available() > 0) {
@@ -223,11 +233,11 @@ float readCurrent() {
     Serial.print("UART received: ");
     Serial.println(incomingByte, DEC);
   }
-}
+}*/
 
-float calcMass() {
+/*float calcMass() {
 
-}
+}*/
 
 
 
@@ -238,89 +248,64 @@ float calcMass() {
 
 */
 
-void readCommand() {
+bool readCommand() {
   if (Serial.available()) {
     //Serial.flush();
     char c = Serial.read();
     switch (c) {
       case 'a' :
-        Serial.println("Current Action: Stopped\n" );
-        /*setPWM(255);*/
-        action = 'a';
+        Serial.println(F("Current Action: Stopped"));
+        action = IDLE;
         break;
       case 'b' :
-        /*Serial.println("Set PWm (int)\n" );
-        while (!Serial.available()) {}
-        tempPWM = Serial.parseInt();
-        if (tempPWM < 256) {
-          setPWM(tempPWM);
-        }
-        else {
-          Serial.println("Invalid int\n" );
-        }
-        break;*/
+        Serial.println(F("Current Action: Auger (slow)"));
+        action = AUGERSLOW;
+        break;
       case 'c' :
-        /*Serial.print("current is ");
-        Serial.println(getCurrent());*/
+        Serial.println(F("Current Action: Auger (fast)"));
+        action = AUGERFAST;
         break;
       case 'd' :
-        /*Serial.print("position is ");
-        Serial.println(getPosition());*/
+        Serial.println(F("Current Action: Measuring"));
+        Serial.println(F("Press q to quit"));
+        action = MEASURE;
         break;
       case 'e' :
-        Serial.print("correcting position ");
-        correctPosition();
+        Serial.println("Current Action: Dispensing ");
+        action = DISPENSE;
         break;
       case 'f' :
-        Serial.print("measure mass (in current/ not tared) ");
-        /*correctPosition();
-        temp = String(calcMass());
-        Serial.println(temp);*/
-        break;
-      case 'g' :
-        Serial.println("Number of steps (int)  200 steps = 1 rev\n");
+        Serial.println("Enter Number of steps (int) [200 steps = 1 rev]:");
         while (!Serial.available()) {}
         numSteps = Serial.parseInt();
-        enable();
+        stepper.enable();
         takeSteps(numSteps);
-        disable();
+        stepper.disable();
         break;
       case 'h' :
         /*Serial.print("tare ");
         tare();*/
         break;
-      case 'i' :
-        Serial.print("enable ");
-        enable();
-        break;
-      case 'j' :
-        Serial.print("disable ");
-        disable();
-        break;
-      case 'k' :
-        Serial.print("auger");
-        enable();
-        action = 'k';
-        break;
-      case 'l' :
-        Serial.println("rpm (int)  ");
+      case 'r' :
+        Serial.println("Enter rpm (int) [0 - 300]:");
         while (!Serial.available()) {}
         rpm = Serial.parseInt();
         break;
-      case 'm':
-        enable();
-        action = 'm';
-        break;
     }
+    analogWrite(PWMpin,0);
+    stepper.disable();
     menu();
+    return true;
   }
+  return false;
 }
 
 
 void menu() {
-  Serial.println("a:stop ");
-  Serial.println("k:auger");
-  Serial.println("p:plate");
-  Serial.println("m:measure");
-
+  Serial.println();
+  Serial.println(F("a: Stop"));
+  Serial.println(F("b: Auger (slow)"));
+  Serial.println(F("c: Auger (fast)"));
+  Serial.println(F("d: Measure"));
+  Serial.println(F("e: Dispense"));
 }

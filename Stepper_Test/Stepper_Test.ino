@@ -4,16 +4,16 @@
 #include <DRV8834.h>
 #include <avr/wdt.h>
 #include <Arduino.h>
-#include <SoftwareSerial.h>
+//#include <SoftwareSerial.h>
 
 #define SHOWMENU
 
 // using a 200-step motor (most common)
 // pins used are DIR, STEP, MS1, MS2, MS3 in that order
-DRV8825 stepper(200, 8, 9);
-#define ENBL 7
-#define enable() digitalWrite(ENBL,LOW)
-#define disable() digitalWrite(ENBL,HIGH);
+DRV8825 stepper(200, 3, 4, 2);
+//#define ENBL 7
+//#define stepper.enable() digitalWrite(ENBL,LOW)
+//#define stepper.disable() digitalWrite(ENBL,HIGH);
 
 char action = 'a';
 long rpm = 10;
@@ -27,8 +27,8 @@ void printMenu();
 void takeSteps(int);
 
 void setup() {
-  pinMode(ENBL,OUTPUT);
-  disable();
+ // pinMode(ENBL,OUTPUT);
+  stepper.disable();
   Serial.begin(9600);
   // Set target motor RPM to 10RPM
   stepper.setRPM(10);
@@ -41,37 +41,37 @@ void loop() {
   serialRead();
   switch (action) {
     case 'a':
-      disable();
+      stepper.disable();
       break;
     case 'b' :
-      enable();
+      stepper.enable();
       auger();
       break;
     case 'c' :
-      enable();
+      stepper.enable();
       vibrationAuger();
       break;
     case 'd' :
-      enable();
+      stepper.enable();
       vibrationPlateSetup();
       break;
     case 'z' :
-      enable();
+      stepper.enable();
       vibrationPlate();
       break;
     case 'f' :
-      enable();
+      stepper.enable();
       takeSteps(numSteps);
       break;
     case 'h':
-      enable();
+      stepper.enable();
       break;
   }
 }
 
 void auger() {
   stepper.setRPM(rpm);
-  stepper.move(50);
+  stepper.move(5);
 }
 
 void vibrationPlateSetup() {
